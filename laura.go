@@ -21,6 +21,7 @@ Laura API:
  This will echo the plaintext from myjournal.
 
 */
+
 const DIARY_ROOT = "/Users/adam/Documents/laura/"
 const DIARY_PERMISSION = 0731
 
@@ -32,11 +33,11 @@ func main() {
 		Long:  "Makes a new, empty diary.",
 		Run: func(cmd *cobra.Command, args []string) {
 			enforceArgs(args, "diaryName")
+
 			err := os.MkdirAll(DIARY_ROOT, DIARY_PERMISSION)
-			if err != nil {
-				fmt.Printf("Error: %s", err)
-			}
+			dealWith(err)
 			_, err = os.Create(diaryPath(args[0]))
+			dealWith(err)
 		},
 	}
 
@@ -45,10 +46,11 @@ func main() {
 		Short: "Lists all diaries",
 		Long:  "Lists all diaries.",
 		Run: func(cmd *cobra.Command, args []string) {
+
 			files, err := ioutil.ReadDir(DIARY_ROOT)
 			for _, f := range files {
 				name := f.Name()
-				fmt.Println(name[:len(name)-6])
+				fmt.Println(name[:len(name)-6]) // Strip off the .diary file extension
 			}
 			dealWith(err)
 		},
@@ -63,9 +65,10 @@ func main() {
 			diaryName, newEntryText := args[0], args[1]
 
 			text, err := ioutil.ReadFile(diaryPath(diaryName))
-			text = decrypt(text)
 			dealWith(err)
+			text = decrypt(text)
 			newText := encrypt([]byte(string(text) + newEntryText + "\n"))
+
 			ioutil.WriteFile(diaryPath(diaryName), newText, DIARY_PERMISSION)
 		},
 	}
@@ -101,11 +104,12 @@ func dealWith(err error) {
 	}
 }
 
+// Maps diary names to their location in the filesystem.
 func diaryPath(diaryName string) string {
 	return DIARY_ROOT + diaryName + ".diary"
 }
 
-// Exits the program with an error message if len(args) < n
+// Exits the program with an error message if len(args) < len(expected args).
 func enforceArgs(actual []string, expected string) {
 	if len(actual) < len(strings.Split(expected, " ")) {
 		fmt.Printf("Expected arguments [%s]\n", expected)
@@ -113,6 +117,7 @@ func enforceArgs(actual []string, expected string) {
 	}
 }
 
+// Encrypt a diary.
 func encrypt(plaintext []byte) []byte {
 	output := []byte("")
 	for _, char := range plaintext {
@@ -122,6 +127,7 @@ func encrypt(plaintext []byte) []byte {
 	return output
 }
 
+// Decrypt a diary.
 func decrypt(cryptext []byte) []byte {
 	output := []byte("")
 	for _, char := range cryptext {
