@@ -63,8 +63,9 @@ func main() {
 			diaryName, newEntryText := args[0], args[1]
 
 			text, err := ioutil.ReadFile(diaryPath(diaryName))
+			text = decrypt(text)
 			dealWith(err)
-			newText := []byte(string(text) + newEntryText + "\n")
+			newText := encrypt([]byte(string(text) + newEntryText + "\n"))
 			ioutil.WriteFile(diaryPath(diaryName), newText, DIARY_PERMISSION)
 		},
 	}
@@ -78,8 +79,12 @@ func main() {
 			diaryName := args[0]
 
 			bytes, err := ioutil.ReadFile(diaryPath(diaryName))
-			text := string(bytes)
-			dealWith(err)
+			if err != nil {
+				fmt.Printf("Couldn't find diary '%s'\n", diaryName)
+				return
+			}
+			text := string(decrypt(bytes))
+
 			fmt.Println(text)
 		},
 	}
@@ -106,4 +111,22 @@ func enforceArgs(actual []string, expected string) {
 		fmt.Printf("Expected arguments [%s]\n", expected)
 		os.Exit(1)
 	}
+}
+
+func encrypt(plaintext []byte) []byte {
+	output := []byte("")
+	for _, char := range plaintext {
+		n := char + 1
+		output = append(output, n)
+	}
+	return output
+}
+
+func decrypt(cryptext []byte) []byte {
+	output := []byte("")
+	for _, char := range cryptext {
+		n := char - 1
+		output = append(output, n)
+	}
+	return output
 }
