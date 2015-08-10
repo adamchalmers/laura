@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 )
 
 /*
@@ -64,10 +65,14 @@ func main() {
 			enforceArgs(args, "diaryName newEntryText")
 			diaryName, newEntryText := args[0], args[1]
 
+			year, month, day := time.Now().Date()
+			timestamp := fmt.Sprintf("%d %s %d\n", day, month, year)
+
 			text, err := ioutil.ReadFile(diaryPath(diaryName))
 			dealWith(err)
 			text = decrypt(text)
-			newText := encrypt([]byte(string(text) + newEntryText + "\n"))
+			newPlaintext := fmt.Sprintf("%s%s---\n%s\n\n", text, timestamp, newEntryText)
+			newText := encrypt([]byte(newPlaintext))
 
 			ioutil.WriteFile(diaryPath(diaryName), newText, DIARY_PERMISSION)
 		},
@@ -92,8 +97,23 @@ func main() {
 		},
 	}
 
+	var cmdDelete = &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a diary",
+		Long:  "Delete a diary",
+		Run: func(cmd *cobra.Command, args []string) {
+			enforceArgs(args, "diaryName")
+			diaryName := args[0]
+
+			err := os.Remove(diaryPath(diaryName))
+			if err != nil {
+				fmt.Printf("No diary named %s exists\n", diaryName)
+			}
+		},
+	}
+
 	var rootCmd = &cobra.Command{Use: "laura"}
-	rootCmd.AddCommand(cmdNew, cmdList, cmdAddto, cmdRead)
+	rootCmd.AddCommand(cmdNew, cmdList, cmdAddto, cmdRead, cmdDelete)
 	rootCmd.Execute()
 
 }
