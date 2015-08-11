@@ -2,18 +2,29 @@ package cmds
 
 import (
 	"fmt"
+	"github.com/adamchalmers/laura/diary_io"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 )
 
-const (
-	DIARY_ROOT           = "/Users/adam/Documents/laura/"
-	DIARY_PERMISSION     = 0731
-	DIARY_FILE_EXTENSION = ".diary"
-)
+func MakeCommands() []*cobra.Command {
+	return []*cobra.Command{CmdNew, CmdList, CmdAddto, CmdRead, CmdDelete}
+}
+
+func addToDiaryText(cryptext []byte, newEntryText string, t time.Time) []byte {
+	text := decrypt(cryptext)
+	year, month, day := t.Date()
+	timestamp := fmt.Sprintf("%d %s %d\n", day, month, year)
+	newPlaintext := fmt.Sprintf("%s%s---\n%s\n\n", text, timestamp, newEntryText)
+	newText := encrypt([]byte(newPlaintext))
+	return newText
+}
+
+func readDiary(bytes []byte) string {
+	return string(decrypt(bytes))
+}
 
 func makeCmd(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
 	return &cobra.Command{
@@ -27,70 +38,6 @@ func makeCmd(name string, desc string, argNames string, fn func(*cobra.Command, 
 			fn(cmd, args)
 		},
 	}
-}
-
-var CmdNew = makeCmd("new", "Makes a new diary", "diaryName", func(cmd *cobra.Command, args []string) {
-	err := os.MkdirAll(DIARY_ROOT, DIARY_PERMISSION)
-	dealWith(err)
-	_, err = os.Create(diaryPath(args[0]))
-	dealWith(err)
-})
-
-var CmdList = makeCmd("list", "Lists all diaries", "", func(cmd *cobra.Command, args []string) {
-	files, err := ioutil.ReadDir(DIARY_ROOT)
-	for _, f := range files {
-		name := f.Name()
-		fmt.Println(name[:len(name)-len(DIARY_FILE_EXTENSION)]) // Strip off the .diary file extension
-	}
-	dealWith(err)
-})
-
-var CmdAddto = makeCmd("addto", "Adds text to a diary", "diaryName newEntryText", func(cmd *cobra.Command, args []string) {
-	diaryName, newEntryText := args[0], args[1]
-
-	year, month, day := time.Now().Date()
-	timestamp := fmt.Sprintf("%d %s %d\n", day, month, year)
-
-	text, err := ioutil.ReadFile(diaryPath(diaryName))
-	dealWith(err)
-	text = decrypt(text)
-	newPlaintext := fmt.Sprintf("%s%s---\n%s\n\n", text, timestamp, newEntryText)
-	newText := encrypt([]byte(newPlaintext))
-
-	ioutil.WriteFile(diaryPath(diaryName), newText, DIARY_PERMISSION)
-})
-
-var CmdRead = makeCmd("read", "Displays contents of a diary", "diaryName", func(cmd *cobra.Command, args []string) {
-	diaryName := args[0]
-
-	bytes, err := ioutil.ReadFile(diaryPath(diaryName))
-	if err != nil {
-		fmt.Printf("Couldn't find diary '%s'\n", diaryName)
-		return
-	}
-	text := string(decrypt(bytes))
-
-	fmt.Println(text)
-})
-
-var CmdDelete = makeCmd("delete", "Delete a diary", "diaryName", func(cmd *cobra.Command, args []string) {
-	diaryName := args[0]
-
-	err := os.Remove(diaryPath(diaryName))
-	if err != nil {
-		fmt.Printf("No diary named %s exists\n", diaryName)
-	}
-})
-
-func dealWith(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Maps diary names to their location in the filesystem.
-func diaryPath(diaryName string) string {
-	return DIARY_ROOT + diaryName + DIARY_FILE_EXTENSION
 }
 
 // Exits the program with an error message if len(args) < len(expected args).
@@ -119,4 +66,60 @@ func decrypt(cryptext []byte) []byte {
 		output = append(output, n)
 	}
 	return output
+}
+
+var CmdNew = makeCmd("new", "Makes a new diary", "diaryName", func(cmd *cobra.Command, args []string) {
+	err := diary_io.MakeLauraDir()
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+	_, err = diary_io.MakeDiary(args[0])
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+})
+
+var CmdList = makeCmd("list", "Lists all diaries", "", func(cmd *cobra.Command, args []string) {
+	for _, name := range diary_io.FindDiaryNames() {
+		fmt.Println(name)
+	}
+})
+
+var CmdAddto = makeCmd("addto", "Adds text to a diary", "diaryName newEntryText", func(cmd *cobra.Command, args []string) {
+	diaryName, newEntryText := args[0], args[1]
+
+	text, err := diary_io.ReadDiary(diaryName)
+	dealWith(err)
+
+	newText := addToDiaryText(text, newEntryText, time.Now())
+
+	diary_io.AddTo(diaryName, newText)
+})
+
+var CmdRead = makeCmd("read", "Displays contents of a diary", "diaryName", func(cmd *cobra.Command, args []string) {
+	diaryName := args[0]
+
+	bytes, err := diary_io.ReadDiary(diaryName)
+	if err != nil {
+		fmt.Printf("Couldn't find diary '%s'\n", diaryName)
+		return
+	}
+	text := readDiary(bytes)
+
+	fmt.Println(text)
+})
+
+var CmdDelete = makeCmd("delete", "Delete a diary", "diaryName", func(cmd *cobra.Command, args []string) {
+	diaryName := args[0]
+
+	err := diary_io.DeleteDiary(diaryName)
+	if err != nil {
+		fmt.Printf("No diary named %s exists\n", diaryName)
+	}
+})
+
+func dealWith(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

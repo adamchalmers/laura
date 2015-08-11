@@ -14,7 +14,9 @@ import (
 func main() {
 
 	var rootCmd = &cobra.Command{Use: "laura"}
-	rootCmd.AddCommand(cmds.CmdNew, cmds.CmdList, cmds.CmdAddto, cmds.CmdRead, cmds.CmdDelete)
+	for _, cmd := range cmds.MakeCommands() {
+		rootCmd.AddCommand(cmd)
+	}
 	rootCmd.Execute()
 
 }
