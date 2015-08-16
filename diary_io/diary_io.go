@@ -1,8 +1,11 @@
 package diary_io
 
 import (
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/user"
 )
 
 type LauraFS interface {
@@ -21,7 +24,11 @@ type RealFS struct {
 }
 
 func (fs *RealFS) Init() error {
-	fs.DIARY_ROOT = "/Users/adam/Documents/laura/"
+	username, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fs.DIARY_ROOT = fmt.Sprintf("%v/Documents/laura/", username.HomeDir)
 	fs.DIARY_PERMISSION = 0731
 	fs.DIARY_FILE_EXTENSION = ".diary"
 	return os.MkdirAll(fs.DIARY_ROOT, fs.DIARY_PERMISSION)
@@ -38,7 +45,7 @@ func (fs *RealFS) MakeDiary(name string) (*os.File, error) {
 func (fs *RealFS) GetNames() []string {
 	files, err := ioutil.ReadDir(fs.DIARY_ROOT)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	output := make([]string, 0)
 	for _, f := range files {
