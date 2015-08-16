@@ -9,7 +9,70 @@ import (
 	"time"
 )
 
-func MakeCommands() []*cobra.Command {
+func MakeCommands(lfs diary_io.LauraFS) []*cobra.Command {
+
+	lfs.Init()
+
+	makeCmd := func(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
+		return &cobra.Command{
+			Use:   fmt.Sprintf("%s [%s]", name, argNames),
+			Short: desc,
+			Long:  desc,
+			Run: func(cmd *cobra.Command, args []string) {
+				if argNames != "" {
+					enforceArgs(args, argNames)
+				}
+				fn(cmd, args)
+			},
+		}
+	}
+
+	var CmdNew = makeCmd("new", "Makes a new diary", "diaryName", func(cmd *cobra.Command, args []string) {
+		_, err := lfs.MakeDiary(args[0])
+		if err != nil {
+			fmt.Printf(err.Error())
+		}
+	})
+
+	var CmdList = makeCmd("list", "Lists all diaries", "", func(cmd *cobra.Command, args []string) {
+		for _, name := range lfs.GetNames() {
+			fmt.Println(name)
+		}
+	})
+
+	var CmdAddto = makeCmd("addto", "Adds text to a diary", "diaryName newEntryText", func(cmd *cobra.Command, args []string) {
+		diaryName, newEntryText := args[0], args[1]
+
+		text, err := lfs.ReadDiary(diaryName)
+		dealWith(err)
+
+		newText := addToDiaryText(text, newEntryText, time.Now())
+
+		lfs.AddTo(diaryName, newText)
+	})
+
+	var CmdRead = makeCmd("read", "Displays contents of a diary", "diaryName", func(cmd *cobra.Command, args []string) {
+		diaryName := args[0]
+
+		bytes, err := lfs.ReadDiary(diaryName)
+		if err != nil {
+			fmt.Printf("Couldn't find diary '%s'\n", diaryName)
+			return
+		}
+		text := readDiary(bytes)
+
+		fmt.Println(text)
+	})
+
+	var CmdDelete = makeCmd("delete", "Delete a diary", "diaryName", func(cmd *cobra.Command, args []string) {
+		diaryName := args[0]
+
+		err := lfs.DeleteDiary(diaryName)
+		if err != nil {
+			fmt.Printf("No diary named %s exists\n", diaryName)
+		}
+	})
+
 	return []*cobra.Command{CmdNew, CmdList, CmdAddto, CmdRead, CmdDelete}
 }
 
@@ -24,20 +87,6 @@ func addToDiaryText(cryptext []byte, newEntryText string, t time.Time) []byte {
 
 func readDiary(bytes []byte) string {
 	return string(decrypt(bytes))
-}
-
-func makeCmd(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
-	return &cobra.Command{
-		Use:   fmt.Sprintf("%s [%s]", name, argNames),
-		Short: desc,
-		Long:  desc,
-		Run: func(cmd *cobra.Command, args []string) {
-			if argNames != "" {
-				enforceArgs(args, argNames)
-			}
-			fn(cmd, args)
-		},
-	}
 }
 
 // Exits the program with an error message if len(args) < len(expected args).
@@ -67,57 +116,6 @@ func decrypt(cryptext []byte) []byte {
 	}
 	return output
 }
-
-var CmdNew = makeCmd("new", "Makes a new diary", "diaryName", func(cmd *cobra.Command, args []string) {
-	err := diary_io.MakeLauraDir()
-	if err != nil {
-		fmt.Printf(err.Error())
-	}
-	_, err = diary_io.MakeDiary(args[0])
-	if err != nil {
-		fmt.Printf(err.Error())
-	}
-})
-
-var CmdList = makeCmd("list", "Lists all diaries", "", func(cmd *cobra.Command, args []string) {
-	for _, name := range diary_io.FindDiaryNames() {
-		fmt.Println(name)
-	}
-})
-
-var CmdAddto = makeCmd("addto", "Adds text to a diary", "diaryName newEntryText", func(cmd *cobra.Command, args []string) {
-	diaryName, newEntryText := args[0], args[1]
-
-	text, err := diary_io.ReadDiary(diaryName)
-	dealWith(err)
-
-	newText := addToDiaryText(text, newEntryText, time.Now())
-
-	diary_io.AddTo(diaryName, newText)
-})
-
-var CmdRead = makeCmd("read", "Displays contents of a diary", "diaryName", func(cmd *cobra.Command, args []string) {
-	diaryName := args[0]
-
-	bytes, err := diary_io.ReadDiary(diaryName)
-	if err != nil {
-		fmt.Printf("Couldn't find diary '%s'\n", diaryName)
-		return
-	}
-	text := readDiary(bytes)
-
-	fmt.Println(text)
-})
-
-var CmdDelete = makeCmd("delete", "Delete a diary", "diaryName", func(cmd *cobra.Command, args []string) {
-	diaryName := args[0]
-
-	err := diary_io.DeleteDiary(diaryName)
-	if err != nil {
-		fmt.Printf("No diary named %s exists\n", diaryName)
-	}
-})
-
 func dealWith(err error) {
 	if err != nil {
 		panic(err)

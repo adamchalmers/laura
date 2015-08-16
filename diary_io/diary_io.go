@@ -5,27 +5,38 @@ import (
 	"os"
 )
 
-const (
-	DIARY_ROOT           = "/Users/adam/Documents/laura/"
-	DIARY_PERMISSION     = 0731
-	DIARY_FILE_EXTENSION = ".diary"
-)
-
-// Maps diary names to their location in the filesystem.
-func DiaryPath(diaryName string) string {
-	return DIARY_ROOT + diaryName + DIARY_FILE_EXTENSION
+type LauraFS interface {
+	GetNames() []string
+	ReadDiary(diaryName string) ([]byte, error)
+	MakeDiary(string) (*os.File, error)
+	DeleteDiary(string) error
+	Init() error
+	AddTo(string, []byte)
 }
 
-func MakeLauraDir() error {
-	return os.MkdirAll(DIARY_ROOT, DIARY_PERMISSION)
+type RealFS struct {
+	DIARY_ROOT           string
+	DIARY_PERMISSION     os.FileMode
+	DIARY_FILE_EXTENSION string
 }
 
-func MakeDiary(name string) (*os.File, error) {
-	return os.Create(DiaryPath(name))
+func (fs *RealFS) Init() error {
+	fs.DIARY_ROOT = "/Users/adam/Documents/laura/"
+	fs.DIARY_PERMISSION = 0731
+	fs.DIARY_FILE_EXTENSION = ".diary"
+	return os.MkdirAll(fs.DIARY_ROOT, fs.DIARY_PERMISSION)
 }
 
-func FindDiaryNames() []string {
-	files, err := ioutil.ReadDir(DIARY_ROOT)
+func (fs *RealFS) diaryPath(name string) string {
+	return fs.DIARY_ROOT + name + fs.DIARY_FILE_EXTENSION
+}
+
+func (fs *RealFS) MakeDiary(name string) (*os.File, error) {
+	return os.Create(fs.diaryPath(name))
+}
+
+func (fs *RealFS) GetNames() []string {
+	files, err := ioutil.ReadDir(fs.DIARY_ROOT)
 	if err != nil {
 		panic(err)
 	}
@@ -33,20 +44,20 @@ func FindDiaryNames() []string {
 	for _, f := range files {
 		name := f.Name()
 		// Strip off the .diary file extension
-		output = append(output, name[:len(name)-len(DIARY_FILE_EXTENSION)])
+		output = append(output, name[:len(name)-len(fs.DIARY_FILE_EXTENSION)])
 	}
 	return output
 }
 
-func ReadDiary(diaryName string) ([]byte, error) {
-	return ioutil.ReadFile(DiaryPath(diaryName))
+func (fs *RealFS) ReadDiary(diaryName string) ([]byte, error) {
+	return ioutil.ReadFile(fs.diaryPath(diaryName))
 }
 
-func DeleteDiary(name string) error {
-	return os.Remove(DiaryPath(name))
+func (fs *RealFS) DeleteDiary(name string) error {
+	return os.Remove(fs.diaryPath(name))
 }
 
-func AddTo(name string, newText []byte) {
-	ioutil.WriteFile(DiaryPath(name), newText, DIARY_PERMISSION)
+func (fs *RealFS) AddTo(name string, newText []byte) {
+	ioutil.WriteFile(fs.diaryPath(name), newText, fs.DIARY_PERMISSION)
 
 }
