@@ -8,12 +8,12 @@ Principles:
 
 import (
 	"github.com/adamchalmers/laura/cmds"
-	"github.com/adamchalmers/laura/diary_io"
+	"github.com/adamchalmers/laura/filesys"
 	"github.com/spf13/cobra"
 )
 
 func main() {
-	lfs := new(diary_io.RealFS)
+	lfs := filesys.NewFS()
 	var rootCmd = &cobra.Command{Use: "laura"}
 	for _, cmd := range cmds.MakeCommands(lfs) {
 		rootCmd.AddCommand(cmd)

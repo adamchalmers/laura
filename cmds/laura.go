@@ -2,16 +2,14 @@ package cmds
 
 import (
 	"fmt"
-	"github.com/adamchalmers/laura/diary_io"
+	"github.com/adamchalmers/laura/filesys"
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
 	"time"
 )
 
-func MakeCommands(lfs diary_io.LauraFS) []*cobra.Command {
-
-	lfs.Init()
+func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 
 	makeCmd := func(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
 		return &cobra.Command{

@@ -1,4 +1,4 @@
-package diary_io
+package filesys
 
 import (
 	"fmt"
@@ -8,41 +8,45 @@ import (
 	"os/user"
 )
 
-type LauraFS interface {
+type FileSys interface {
 	GetNames() []string
 	ReadDiary(diaryName string) ([]byte, error)
 	MakeDiary(string) (*os.File, error)
 	DeleteDiary(string) error
-	Init() error
 	AddTo(string, []byte)
 }
 
-type RealFS struct {
+type realFS struct {
 	DIARY_ROOT           string
 	DIARY_PERMISSION     os.FileMode
 	DIARY_FILE_EXTENSION string
 }
 
-func (fs *RealFS) Init() error {
+func NewFS() *realFS {
 	username, err := user.Current()
 	if err != nil {
 		log.Fatal(err)
 	}
+	fs := new(realFS)
 	fs.DIARY_ROOT = fmt.Sprintf("%v/Documents/laura/", username.HomeDir)
 	fs.DIARY_PERMISSION = 0731
 	fs.DIARY_FILE_EXTENSION = ".diary"
-	return os.MkdirAll(fs.DIARY_ROOT, fs.DIARY_PERMISSION)
+	err = os.MkdirAll(fs.DIARY_ROOT, fs.DIARY_PERMISSION)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fs
 }
 
-func (fs *RealFS) diaryPath(name string) string {
+func (fs *realFS) diaryPath(name string) string {
 	return fs.DIARY_ROOT + name + fs.DIARY_FILE_EXTENSION
 }
 
-func (fs *RealFS) MakeDiary(name string) (*os.File, error) {
+func (fs *realFS) MakeDiary(name string) (*os.File, error) {
 	return os.Create(fs.diaryPath(name))
 }
 
-func (fs *RealFS) GetNames() []string {
+func (fs *realFS) GetNames() []string {
 	files, err := ioutil.ReadDir(fs.DIARY_ROOT)
 	if err != nil {
 		log.Fatal(err)
@@ -56,15 +60,15 @@ func (fs *RealFS) GetNames() []string {
 	return output
 }
 
-func (fs *RealFS) ReadDiary(diaryName string) ([]byte, error) {
+func (fs *realFS) ReadDiary(diaryName string) ([]byte, error) {
 	return ioutil.ReadFile(fs.diaryPath(diaryName))
 }
 
-func (fs *RealFS) DeleteDiary(name string) error {
+func (fs *realFS) DeleteDiary(name string) error {
 	return os.Remove(fs.diaryPath(name))
 }
 
-func (fs *RealFS) AddTo(name string, newText []byte) {
+func (fs *realFS) AddTo(name string, newText []byte) {
 	ioutil.WriteFile(fs.diaryPath(name), newText, fs.DIARY_PERMISSION)
 
 }
