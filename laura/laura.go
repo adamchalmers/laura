@@ -18,7 +18,7 @@ import (
  * Make all the command objects to be used with the Cobra library.
  * Takes in a FileSys object (dependency injection) for testing purposes.
  */
-func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
+func MakeCommands(lfs filesys.FileSys, t time.Time) map[string]*cobra.Command {
 
 	makeCmd := func(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
 		return &cobra.Command{
@@ -26,8 +26,8 @@ func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 			Short: desc,
 			Long:  desc,
 			Run: func(cmd *cobra.Command, args []string) {
-				if argNames != "" {
-					enforceArgs(args, argNames)
+				if argNames != "" && missingArgs(args, argNames) {
+					os.Exit(1)
 				}
 				fn(cmd, args)
 			},
@@ -53,7 +53,7 @@ func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 		text, err := lfs.ReadDiary(diaryName)
 		dealWith(err)
 
-		newText := addToDiaryText(text, newEntryText, time.Now())
+		newText := addToDiaryText(text, newEntryText, t)
 
 		lfs.AddTo(diaryName, newText)
 	})
@@ -66,9 +66,8 @@ func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 			fmt.Printf("Couldn't find diary '%s'\n", diaryName)
 			return
 		}
-		text := readDiary(bytes)
 
-		fmt.Println(text)
+		fmt.Println(string(decrypt(bytes)))
 	})
 
 	var CmdDelete = makeCmd("delete", "Delete a diary", "diaryName", func(cmd *cobra.Command, args []string) {
@@ -80,28 +79,37 @@ func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 		}
 	})
 
-	return []*cobra.Command{CmdNew, CmdList, CmdAddto, CmdRead, CmdDelete}
+	return map[string]*cobra.Command{
+		"new":    CmdNew,
+		"list":   CmdList,
+		"addto":  CmdAddto,
+		"read":   CmdRead,
+		"delete": CmdDelete,
+	}
 }
 
 func addToDiaryText(cryptext string, newEntryText string, t time.Time) string {
 	text := decrypt(cryptext)
-	year, month, day := t.Date()
-	timestamp := fmt.Sprintf("%d %s %d\n", day, month, year)
-	newPlaintext := fmt.Sprintf("%s%s---\n%s\n\n", text, timestamp, newEntryText)
-	newText := encrypt(newPlaintext)
-	return newText
+	ts := timestamp(t)
+	return encrypt(formatEntry(text, newEntryText, ts))
 }
 
-func readDiary(bytes string) string {
-	return string(decrypt(bytes))
+func formatEntry(oldText string, newText string, timestamp string) string {
+	return fmt.Sprintf("%s%s---\n%s\n\n", oldText, timestamp, newText)
+}
+
+func timestamp(t time.Time) string {
+	year, month, day := t.Date()
+	return fmt.Sprintf("%d %s %d\n", day, month, year)
 }
 
 // Exits the program with an error message if len(args) < len(expected args).
-func enforceArgs(actual []string, expected string) {
+func missingArgs(actual []string, expected string) bool {
 	if len(actual) < len(strings.Split(expected, " ")) {
 		fmt.Printf("Expected arguments [%s]\n", expected)
-		os.Exit(1)
+		return true
 	}
+	return false
 }
 
 // Encrypt a diary.
