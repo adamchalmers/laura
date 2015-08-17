@@ -10,10 +10,10 @@ import (
 
 type FileSys interface {
 	GetNames() []string
-	ReadDiary(diaryName string) ([]byte, error)
-	MakeDiary(string) (*os.File, error)
+	ReadDiary(string) (string, error)
+	MakeDiary(string) error
 	DeleteDiary(string) error
-	AddTo(string, []byte)
+	AddTo(string, string)
 }
 
 type realFS struct {
@@ -42,8 +42,9 @@ func (fs *realFS) diaryPath(name string) string {
 	return fs.DIARY_ROOT + name + fs.DIARY_FILE_EXTENSION
 }
 
-func (fs *realFS) MakeDiary(name string) (*os.File, error) {
-	return os.Create(fs.diaryPath(name))
+func (fs *realFS) MakeDiary(name string) error {
+	_, err := os.Create(fs.diaryPath(name))
+	return err
 }
 
 func (fs *realFS) GetNames() []string {
@@ -60,15 +61,16 @@ func (fs *realFS) GetNames() []string {
 	return output
 }
 
-func (fs *realFS) ReadDiary(diaryName string) ([]byte, error) {
-	return ioutil.ReadFile(fs.diaryPath(diaryName))
+func (fs *realFS) ReadDiary(diaryName string) (string, error) {
+	text, err := ioutil.ReadFile(fs.diaryPath(diaryName))
+	return string(text), err
 }
 
 func (fs *realFS) DeleteDiary(name string) error {
 	return os.Remove(fs.diaryPath(name))
 }
 
-func (fs *realFS) AddTo(name string, newText []byte) {
-	ioutil.WriteFile(fs.diaryPath(name), newText, fs.DIARY_PERMISSION)
+func (fs *realFS) AddTo(name string, newText string) {
+	ioutil.WriteFile(fs.diaryPath(name), []byte(newText), fs.DIARY_PERMISSION)
 
 }

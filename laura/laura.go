@@ -26,7 +26,7 @@ func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 	}
 
 	var CmdNew = makeCmd("new", "Makes a new diary", "diaryName", func(cmd *cobra.Command, args []string) {
-		_, err := lfs.MakeDiary(args[0])
+		err := lfs.MakeDiary(args[0])
 		if err != nil {
 			fmt.Printf(err.Error())
 		}
@@ -74,16 +74,16 @@ func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 	return []*cobra.Command{CmdNew, CmdList, CmdAddto, CmdRead, CmdDelete}
 }
 
-func addToDiaryText(cryptext []byte, newEntryText string, t time.Time) []byte {
+func addToDiaryText(cryptext string, newEntryText string, t time.Time) string {
 	text := decrypt(cryptext)
 	year, month, day := t.Date()
 	timestamp := fmt.Sprintf("%d %s %d\n", day, month, year)
 	newPlaintext := fmt.Sprintf("%s%s---\n%s\n\n", text, timestamp, newEntryText)
-	newText := encrypt([]byte(newPlaintext))
+	newText := encrypt(newPlaintext)
 	return newText
 }
 
-func readDiary(bytes []byte) string {
+func readDiary(bytes string) string {
 	return string(decrypt(bytes))
 }
 
@@ -96,21 +96,21 @@ func enforceArgs(actual []string, expected string) {
 }
 
 // Encrypt a diary.
-func encrypt(plaintext []byte) []byte {
-	output := []byte("")
+func encrypt(plaintext string) string {
+	output := ""
 	for _, char := range plaintext {
 		n := char + 1
-		output = append(output, n)
+		output += string(n)
 	}
 	return output
 }
 
 // Decrypt a diary.
-func decrypt(cryptext []byte) []byte {
-	output := []byte("")
+func decrypt(cryptext string) string {
+	output := ""
 	for _, char := range cryptext {
 		n := char - 1
-		output = append(output, n)
+		output += string(n)
 	}
 	return output
 }
