@@ -42,7 +42,7 @@ func MakeCommands(lfs filesys.FileSys, t time.Time) map[string]*cobra.Command {
 	})
 
 	var CmdList = makeCmd("list", "Lists all diaries", "", func(cmd *cobra.Command, args []string) {
-		for _, name := range lfs.GetNames() {
+		for _, name := range lfs.Names() {
 			fmt.Println(name)
 		}
 	})

@@ -12,9 +12,14 @@ import (
 	"os/user"
 )
 
+const (
+	DIARY_PERMISSION     = 0731
+	DIARY_FILE_EXTENSION = ".diary"
+)
+
 type FileSys interface {
 	// List all diaries.
-	GetNames() []string
+	Names() []string
 	// Get the contents of a diary.
 	ReadDiary(name string) (contents string, err error)
 	// Make a new empty diary.
@@ -27,31 +32,22 @@ type FileSys interface {
 
 // An implementation of FileSys that stores data in a real OS filesystem.
 type realFS struct {
-	DIARY_ROOT           string
-	DIARY_PERMISSION     os.FileMode
-	DIARY_FILE_EXTENSION string
+	rootDir string
 }
 
 // Factory. Guarantees correct initialization of the private realFS struct.
 func NewFS() *realFS {
 	username, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fs := new(realFS)
-	fs.DIARY_ROOT = fmt.Sprintf("%v/Documents/laura/", username.HomeDir)
-	fs.DIARY_PERMISSION = 0731
-	fs.DIARY_FILE_EXTENSION = ".diary"
-	err = os.MkdirAll(fs.DIARY_ROOT, fs.DIARY_PERMISSION)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return fs
+	handle(err)
+	fs := realFS{fmt.Sprintf("%v/Documents/laura/", username.HomeDir)}
+	err = os.MkdirAll(fs.rootDir, DIARY_PERMISSION)
+	handle(err)
+	return &fs
 }
 
 // Helper function to return the absolute path to a diary.
 func (fs *realFS) diaryPath(name string) string {
-	return fs.DIARY_ROOT + name + fs.DIARY_FILE_EXTENSION
+	return fs.rootDir + name + DIARY_FILE_EXTENSION
 }
 
 func (fs *realFS) MakeDiary(name string) error {
@@ -59,16 +55,14 @@ func (fs *realFS) MakeDiary(name string) error {
 	return err
 }
 
-func (fs *realFS) GetNames() []string {
-	files, err := ioutil.ReadDir(fs.DIARY_ROOT)
-	if err != nil {
-		log.Fatal(err)
-	}
+func (fs *realFS) Names() []string {
+	files, err := ioutil.ReadDir(fs.rootDir)
+	handle(err)
 	output := make([]string, 0)
 	for _, f := range files {
 		name := f.Name()
 		// Strip off the .diary file extension
-		output = append(output, name[:len(name)-len(fs.DIARY_FILE_EXTENSION)])
+		output = append(output, name[:len(name)-len(DIARY_FILE_EXTENSION)])
 	}
 	return output
 }
@@ -83,6 +77,11 @@ func (fs *realFS) DeleteDiary(name string) error {
 }
 
 func (fs *realFS) AddTo(name string, newText string) {
-	ioutil.WriteFile(fs.diaryPath(name), []byte(newText), fs.DIARY_PERMISSION)
+	ioutil.WriteFile(fs.diaryPath(name), []byte(newText), DIARY_PERMISSION)
+}
 
+func handle(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }

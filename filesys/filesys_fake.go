@@ -16,7 +16,7 @@ func NewFakeFS() *fakeFS {
 	return fs
 }
 
-func (fs *fakeFS) GetNames() []string {
+func (fs *fakeFS) Names() []string {
 	return fs.names
 }
 func (fs *fakeFS) ReadDiary(name string) (string, error) {

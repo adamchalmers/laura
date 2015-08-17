@@ -7,13 +7,13 @@ import (
 
 func TestNames(t *testing.T) {
 	fs := NewFakeFS()
-	assert.Empty(t, fs.GetNames())
+	assert.Empty(t, fs.Names())
 
 	diaries := []string{"My Diary", "My Other Diary", "Leland's Diary"}
 	for _, name := range diaries {
 		fs.MakeDiary(name)
 	}
-	assert.Equal(t, diaries, fs.GetNames())
+	assert.Equal(t, diaries, fs.Names())
 }
 
 func TestContents(t *testing.T) {
