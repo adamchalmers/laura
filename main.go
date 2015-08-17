@@ -7,8 +7,8 @@ Principles:
 */
 
 import (
-	"github.com/adamchalmers/laura/cmds"
 	"github.com/adamchalmers/laura/filesys"
+	"github.com/adamchalmers/laura/laura"
 	"github.com/spf13/cobra"
 )
 
