@@ -1,4 +1,4 @@
-package cmds
+package laura
 
 import (
 	"github.com/stretchr/testify/assert"

@@ -1,3 +1,7 @@
+/*
+ * Interface for storing and using Laura journals in a real or fake filesystem.
+ */
+
 package filesys
 
 import (
@@ -9,19 +13,26 @@ import (
 )
 
 type FileSys interface {
+	// List all diaries.
 	GetNames() []string
-	ReadDiary(string) (string, error)
-	MakeDiary(string) error
-	DeleteDiary(string) error
-	AddTo(string, string)
+	// Get the contents of a diary.
+	ReadDiary(name string) (contents string, err error)
+	// Make a new empty diary.
+	MakeDiary(name string) error
+	// Delete a diary.
+	DeleteDiary(name string) error
+	// Append a string to the end of a diary.
+	AddTo(name string, text string)
 }
 
+// An implementation of FileSys that stores data in a real OS filesystem.
 type realFS struct {
 	DIARY_ROOT           string
 	DIARY_PERMISSION     os.FileMode
 	DIARY_FILE_EXTENSION string
 }
 
+// Factory. Guarantees correct initialization of the private realFS struct.
 func NewFS() *realFS {
 	username, err := user.Current()
 	if err != nil {
@@ -38,6 +49,7 @@ func NewFS() *realFS {
 	return fs
 }
 
+// Helper function to return the absolute path to a diary.
 func (fs *realFS) diaryPath(name string) string {
 	return fs.DIARY_ROOT + name + fs.DIARY_FILE_EXTENSION
 }

@@ -1,3 +1,8 @@
+/*
+ * An implementation of the laura/filesys.FileSys interface.
+ * Used for testing app logic against a fake instead of a real filesystem.
+ */
+
 package filesys
 
 type fakeFS struct {

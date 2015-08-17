@@ -1,14 +1,23 @@
-package cmds
+/*
+ * App logic for Laura.
+ */
+
+package laura
 
 import (
 	"fmt"
 	"github.com/adamchalmers/laura/filesys"
 	"github.com/spf13/cobra"
+	"log"
 	"os"
 	"strings"
 	"time"
 )
 
+/*
+ * Make all the command objects to be used with the Cobra library.
+ * Takes in a FileSys object (dependency injection) for testing purposes.
+ */
 func MakeCommands(lfs filesys.FileSys) []*cobra.Command {
 
 	makeCmd := func(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
@@ -114,8 +123,9 @@ func decrypt(cryptext string) string {
 	}
 	return output
 }
+
 func dealWith(err error) {
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
