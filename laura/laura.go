@@ -18,7 +18,7 @@ import (
  * Make all the command objects to be used with the Cobra library.
  * Takes in a FileSys object (dependency injection) for testing purposes.
  */
-func MakeCommands(lfs filesys.FileSys, t time.Time) map[string]*cobra.Command {
+func MakeCommands(lfs filesys.FileSys, t time.Time, keyFn func() string) map[string]*cobra.Command {
 
 	makeCmd := func(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
 		return &cobra.Command{
@@ -53,7 +53,7 @@ func MakeCommands(lfs filesys.FileSys, t time.Time) map[string]*cobra.Command {
 		text, err := lfs.ReadDiary(diaryName)
 		dealWith(err)
 
-		newText := addToDiaryText(text, newEntryText, t)
+		newText := addToDiaryText(text, newEntryText, t, keyFn())
 
 		lfs.AddTo(diaryName, newText)
 	})
@@ -66,8 +66,8 @@ func MakeCommands(lfs filesys.FileSys, t time.Time) map[string]*cobra.Command {
 			fmt.Printf("Couldn't find diary '%s'\n", diaryName)
 			return
 		}
-
-		fmt.Println(string(decrypt(bytes)))
+		key := keyFn()
+		fmt.Println(string(decrypt(bytes, key)))
 	})
 
 	var CmdDelete = makeCmd("delete", "Delete a diary", "diaryName", func(cmd *cobra.Command, args []string) {
@@ -88,10 +88,10 @@ func MakeCommands(lfs filesys.FileSys, t time.Time) map[string]*cobra.Command {
 	}
 }
 
-func addToDiaryText(cryptext string, newEntryText string, t time.Time) string {
-	text := decrypt(cryptext)
+func addToDiaryText(cryptext string, newEntryText string, t time.Time, key string) string {
+	text := decrypt(cryptext, key)
 	ts := timestamp(t)
-	return encrypt(formatEntry(text, newEntryText, ts))
+	return encrypt(formatEntry(text, newEntryText, ts), key)
 }
 
 func formatEntry(oldText string, newText string, timestamp string) string {
@@ -113,23 +113,24 @@ func missingArgs(actual []string, expected string) bool {
 }
 
 // Encrypt a diary.
-func encrypt(plaintext string) string {
-	output := ""
-	for _, char := range plaintext {
-		n := char + 1
-		output += string(n)
-	}
-	return output
+func encrypt(plaintext string, key string) string {
+	return crypto(plaintext, key, 1)
 }
 
 // Decrypt a diary.
-func decrypt(cryptext string) string {
-	output := ""
-	for _, char := range cryptext {
-		n := char - 1
-		output += string(n)
+func decrypt(cryptext string, key string) string {
+	return crypto(cryptext, key, -1)
+}
+
+// Generic symmetric crypto.
+func crypto(input string, key string, sign int) string {
+	output := make([]uint8, len(input))
+	k := key[0]
+	for i := 0; i < len(input); i++ {
+		output[i] = input[i] + uint8(int(k)*sign)
+
 	}
-	return output
+	return string(output)
 }
 
 func dealWith(err error) {

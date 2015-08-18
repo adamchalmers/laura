@@ -9,17 +9,19 @@ import (
 
 func TestCrypto(t *testing.T) {
 	msg := "Hello, world!"
-	assert.Equal(t, msg, encrypt(decrypt(msg)))
-	assert.Equal(t, msg, decrypt(encrypt(msg)))
+	key := "Password"
+	assert.Equal(t, msg, encrypt(decrypt(msg, key), key))
+	assert.Equal(t, msg, decrypt(encrypt(msg, key), key))
 }
 
 func TestAddToDiary(t *testing.T) {
 	now := time.Now()
-	oldText := encrypt("previous entry text.")
+	key := "Password"
+	oldText := encrypt("previous entry text.", key)
 	newText := "Hello, world."
-	contents := addToDiaryText(oldText, newText, now)
-	assert.Contains(t, contents, encrypt(timestamp(now)))
-	assert.Contains(t, contents, encrypt(newText))
+	contents := addToDiaryText(oldText, newText, now, key)
+	assert.Contains(t, contents, encrypt(timestamp(now), key))
+	assert.Contains(t, contents, encrypt(newText, key))
 }
 
 func TestEnforceArgs(t *testing.T) {
@@ -30,7 +32,11 @@ func TestEnforceArgs(t *testing.T) {
 func TestAddtoCommand(t *testing.T) {
 	lfs := filesys.NewFakeFS()
 	now := time.Now()
-	cmds := MakeCommands(lfs, now)
+	key := "Password"
+	var keyFn = func() string {
+		return key
+	}
+	cmds := MakeCommands(lfs, now, keyFn)
 
 	// Make a new diary
 	cmds["new"].SetArgs([]string{"journal"})
@@ -44,7 +50,7 @@ func TestAddtoCommand(t *testing.T) {
 		cmds["addto"].Execute()
 		contents, err := lfs.ReadDiary("journal")
 		assert.Nil(t, err)
-		assert.Contains(t, contents, encrypt(msg))
-		assert.Contains(t, contents, encrypt(timestamp(now)))
+		assert.Contains(t, contents, encrypt(msg, key))
+		assert.Contains(t, contents, encrypt(timestamp(now), key))
 	}
 }
