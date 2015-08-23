@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+const (
+	DELIMITER = "---"
+)
+
 // MakeCommands returns all the Cobra commands that implement Laura's functionality.
 //  lfs:   a Laura Filesystem object for interacting with diary storage.
 //  t:     a Time object for the timestamps which are added to diaries.
@@ -53,7 +57,8 @@ func MakeCommands(lfs filesys.FileSys, t time.Time, keyFn func() string) map[str
 		text, err := lfs.ReadDiary(diaryName)
 		dealWith(err)
 
-		newText := addToDiaryText(text, newEntryText, t, keyFn())
+		newText, err := addToDiaryText(text, newEntryText, t, keyFn())
+		dealWith(err)
 
 		lfs.AddTo(diaryName, newText)
 	})
@@ -67,6 +72,9 @@ func MakeCommands(lfs filesys.FileSys, t time.Time, keyFn func() string) map[str
 			return
 		}
 		key := keyFn()
+		if !checkPassword(bytes, key) {
+			log.Fatal("Wrong password.")
+		}
 		fmt.Println(string(decrypt(bytes, key)))
 	})
 
@@ -88,14 +96,17 @@ func MakeCommands(lfs filesys.FileSys, t time.Time, keyFn func() string) map[str
 	}
 }
 
-func addToDiaryText(cryptext string, newEntryText string, t time.Time, key string) string {
-	text := decrypt(cryptext, key)
+func addToDiaryText(cryptext string, newEntryText string, t time.Time, key string) (string, error) {
+	if !checkPassword(cryptext, key) {
+		return "", fmt.Errorf("Wrong password.")
+	}
+	old := decrypt(cryptext, key)
 	ts := timestamp(t)
-	return encrypt(formatEntry(text, newEntryText, ts), key)
+	return encrypt(formatEntry(old, newEntryText, ts), key), nil
 }
 
 func formatEntry(oldText string, newText string, timestamp string) string {
-	return fmt.Sprintf("%s%s---\n%s\n\n", oldText, timestamp, newText)
+	return fmt.Sprintf("%s%s%s\n%s\n\n", oldText, timestamp, DELIMITER, newText)
 }
 
 func timestamp(t time.Time) string {

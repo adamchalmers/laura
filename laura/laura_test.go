@@ -17,9 +17,11 @@ func TestCrypto(t *testing.T) {
 func TestAddToDiary(t *testing.T) {
 	now := time.Now()
 	key := "Password"
-	oldText := encrypt("previous entry text.", key)
+	oldText, err := addToDiaryText("", "previous entry text.", now, key)
+	assert.Nil(t, err)
 	newText := "Hello, world."
-	contents := addToDiaryText(oldText, newText, now, key)
+	contents, err := addToDiaryText(oldText, newText, now, key)
+	assert.Nil(t, err)
 	assert.Contains(t, decrypt(contents, key), timestamp(now))
 	assert.Contains(t, decrypt(contents, key), newText)
 }

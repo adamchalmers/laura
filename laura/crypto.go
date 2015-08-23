@@ -1,5 +1,9 @@
 package laura
 
+import (
+	"strings"
+)
+
 // Encrypt a diary.
 func encrypt(plaintext string, key string) string {
 	return crypto(plaintext, key, 1)
@@ -21,4 +25,8 @@ func crypto(input string, key string, sign int) string {
 		output[i] = input[i] + uint8(k*sign)
 	}
 	return string(output)
+}
+
+func checkPassword(cryptext string, key string) bool {
+	return len(cryptext) <= 1 || strings.Contains(decrypt(cryptext, key), DELIMITER)
 }
