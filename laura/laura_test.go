@@ -20,8 +20,8 @@ func TestAddToDiary(t *testing.T) {
 	oldText := encrypt("previous entry text.", key)
 	newText := "Hello, world."
 	contents := addToDiaryText(oldText, newText, now, key)
-	assert.Contains(t, contents, encrypt(timestamp(now), key))
-	assert.Contains(t, contents, encrypt(newText, key))
+	assert.Contains(t, decrypt(contents, key), timestamp(now))
+	assert.Contains(t, decrypt(contents, key), newText)
 }
 
 func TestEnforceArgs(t *testing.T) {
@@ -44,13 +44,18 @@ func TestAddtoCommand(t *testing.T) {
 	assert.Contains(t, lfs.Names(), "journal")
 
 	// Write to it
-	msgs := []string{"Hello, world.", "Apple cake"}
-	for _, msg := range msgs {
-		cmds["addto"].SetArgs([]string{"journal", msg})
-		cmds["addto"].Execute()
-		contents, err := lfs.ReadDiary("journal")
-		assert.Nil(t, err)
-		assert.Contains(t, contents, encrypt(msg, key))
-		assert.Contains(t, contents, encrypt(timestamp(now), key))
-	}
+	cmds["addto"].SetArgs([]string{"journal", "Hello world"})
+	cmds["addto"].Execute()
+	contents, err := lfs.ReadDiary("journal")
+	assert.Nil(t, err)
+	assert.Contains(t, decrypt(contents, key), "Hello world")
+	assert.Contains(t, decrypt(contents, key), timestamp(now))
+
+	// Write a second entry
+	cmds["addto"].SetArgs([]string{"journal", "Applecake"})
+	cmds["addto"].Execute()
+	contents, err = lfs.ReadDiary("journal")
+	assert.Nil(t, err)
+	assert.Contains(t, decrypt(contents, key), "Applecake")
+	assert.Contains(t, decrypt(contents, key), timestamp(now))
 }

@@ -15,6 +15,7 @@ import (
 const (
 	DIARY_PERMISSION     = 0731
 	DIARY_FILE_EXTENSION = ".diary"
+	CHECKSTRING          = "!!!"
 )
 
 type FileSys interface {
@@ -27,7 +28,7 @@ type FileSys interface {
 	// Delete a diary.
 	DeleteDiary(name string) error
 	// Append a string to the end of a diary.
-	AddTo(name string, text string)
+	AddTo(name string, text string) error
 }
 
 // An implementation of FileSys that stores data in a real OS filesystem.
@@ -52,7 +53,10 @@ func (fs *realFS) diaryPath(name string) string {
 
 func (fs *realFS) MakeDiary(name string) error {
 	_, err := os.Create(fs.diaryPath(name))
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (fs *realFS) Names() []string {
@@ -76,8 +80,8 @@ func (fs *realFS) DeleteDiary(name string) error {
 	return os.Remove(fs.diaryPath(name))
 }
 
-func (fs *realFS) AddTo(name string, newText string) {
-	ioutil.WriteFile(fs.diaryPath(name), []byte(newText), DIARY_PERMISSION)
+func (fs *realFS) AddTo(name string, newText string) error {
+	return ioutil.WriteFile(fs.diaryPath(name), []byte(newText), DIARY_PERMISSION)
 }
 
 func handle(err error) {

@@ -37,6 +37,7 @@ func (fs *fakeFS) DeleteDiary(target string) error {
 	fs.names = newNames
 	return nil
 }
-func (fs *fakeFS) AddTo(name string, text string) {
+func (fs *fakeFS) AddTo(name string, text string) error {
 	fs.diary[name] += text
+	return nil
 }
