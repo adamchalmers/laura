@@ -1,6 +1,6 @@
 /*
- * App logic for Laura.
- */
+ App logic for Laura.
+*/
 
 package laura
 
@@ -14,10 +14,10 @@ import (
 	"time"
 )
 
-/*
- * Make all the command objects to be used with the Cobra library.
- * Takes in a FileSys object (dependency injection) for testing purposes.
- */
+// MakeCommands returns all the Cobra commands that implement Laura's functionality.
+//  lfs:   a Laura Filesystem object for interacting with diary storage.
+//  t:     a Time object for the timestamps which are added to diaries.
+//  keyFn: a function to extract the encryption key for the user's diaries.
 func MakeCommands(lfs filesys.FileSys, t time.Time, keyFn func() string) map[string]*cobra.Command {
 
 	makeCmd := func(name string, desc string, argNames string, fn func(*cobra.Command, []string)) *cobra.Command {
