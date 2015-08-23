@@ -124,11 +124,13 @@ func decrypt(cryptext string, key string) string {
 
 // Generic symmetric crypto.
 func crypto(input string, key string, sign int) string {
-	output := make([]uint8, len(input))
-	k := key[0]
-	for i := 0; i < len(input); i++ {
-		output[i] = input[i] + uint8(int(k)*sign)
-
+	n := len(input)
+	output := make([]uint8, n)
+	for i := 0; i < n; i++ {
+		// k is an integer taken from successive characters of the password.
+		k := int(key[i%len(key)])
+		// Add or subtract k from the input to produce the output.
+		output[i] = input[i] + uint8(k*sign)
 	}
 	return string(output)
 }
