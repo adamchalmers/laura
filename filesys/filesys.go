@@ -93,6 +93,6 @@ func RootDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	rootDir := filepath.Join(username.HomeDir, "Documents/laura")
+	rootDir := filepath.Join(username.HomeDir, "Documents/laura") + string(filepath.Separator)
 	return rootDir
 }
