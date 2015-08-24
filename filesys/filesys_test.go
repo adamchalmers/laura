@@ -3,6 +3,7 @@ package filesys
 import (
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -41,7 +42,7 @@ func TestFakeContents(t *testing.T) {
 }
 
 func TestRealNames(t *testing.T) {
-	dir := rootDir() + "test/"
+	dir := filepath.Join(RootDir(), "/test") + string(filepath.Separator)
 	fs := NewFS(dir)
 	assert.Empty(t, fs.Names())
 	diaries := []string{"MyDiary", "MyOtherDiary", "Leland'sDiary"}

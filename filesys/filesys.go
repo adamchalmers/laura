@@ -5,11 +5,11 @@
 package filesys
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
+	"path/filepath"
 )
 
 const (
@@ -88,11 +88,11 @@ func handle(err error) {
 	}
 }
 
-func rootDir() string {
+func RootDir() string {
 	username, err := user.Current()
 	if err != nil {
 		log.Fatal(err)
 	}
-	rootDir := fmt.Sprintf("%v/Documents/laura/", username.HomeDir)
+	rootDir := filepath.Join(username.HomeDir, "Documents/laura")
 	return rootDir
 }
