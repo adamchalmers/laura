@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	lfs := filesys.NewFS()
+	lfs := filesys.NewFS(filesys.rootDir())
 	var rootCmd = &cobra.Command{Use: "laura"}
 
 	var Key = func() string {

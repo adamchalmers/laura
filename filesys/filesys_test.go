@@ -2,10 +2,11 @@ package filesys
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
-func TestNames(t *testing.T) {
+func TestFakeNames(t *testing.T) {
 	fs := NewFakeFS()
 	assert.Empty(t, fs.Names())
 
@@ -16,7 +17,7 @@ func TestNames(t *testing.T) {
 	assert.Equal(t, diaries, fs.Names())
 }
 
-func TestContents(t *testing.T) {
+func TestFakeContents(t *testing.T) {
 	fs := NewFakeFS()
 	diaries := map[string]string{
 		"A": "This is the first diary.",
@@ -37,4 +38,21 @@ func TestContents(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, diaries[name], actual)
 	}
+}
+
+func TestRealNames(t *testing.T) {
+	dir := rootDir() + "test/"
+	fs := NewFS(dir)
+	assert.Empty(t, fs.Names())
+	diaries := []string{"MyDiary", "MyOtherDiary", "Leland'sDiary"}
+	for _, name := range diaries {
+		fs.MakeDiary(name)
+	}
+	for _, name := range diaries {
+		assert.Contains(t, fs.Names(), name)
+		fs.DeleteDiary(name)
+		assert.NotContains(t, fs.Names(), name)
+	}
+	assert.Empty(t, fs.Names())
+	os.Remove(dir)
 }

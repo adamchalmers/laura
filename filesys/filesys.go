@@ -37,11 +37,9 @@ type realFS struct {
 }
 
 // Factory. Guarantees correct initialization of the private realFS struct.
-func NewFS() *realFS {
-	username, err := user.Current()
-	handle(err)
-	fs := realFS{fmt.Sprintf("%v/Documents/laura/", username.HomeDir)}
-	err = os.MkdirAll(fs.rootDir, DIARY_PERMISSION)
+func NewFS(rootDir string) *realFS {
+	fs := realFS{rootDir}
+	err := os.MkdirAll(fs.rootDir, DIARY_PERMISSION)
 	handle(err)
 	return &fs
 }
@@ -88,4 +86,13 @@ func handle(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func rootDir() string {
+	username, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rootDir := fmt.Sprintf("%v/Documents/laura/", username.HomeDir)
+	return rootDir
 }
